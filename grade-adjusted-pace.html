@@ -136,7 +136,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Setting aside the why and how, let’s look at the <em>what</em>: the grade adjustment factor itself.</p>
 <p><img src="https://miro.medium.com/v2/resize:fit:1100/format:webp/1*_TwofsNS872wbUS12ykKPQ.png" class="img-fluid"></p>
 <p>Compared to the old energy-consumption-based adjustment factor (blue), the new heart-rate-based adjustment factor (solid orange) gives <strong>much</strong> more credit to downhill running in general. The pace reduction does not dip as low, and it rebounds at a shallower grade; at just 18% downhill, Strava’s latest GAP factor claims that the adjusted pace should be <em>faster</em> than actual pace. On the other side of the coin, for uphill grades (the right half of the chart) the new adjustment factor assigns a <em>lower</em> effort than the old one.</p>
-<p>While exploring my personal activity data lake, I found that Strava seemed to be applying the grade adjustment factor to <em>distance</em>, not to <em>pace</em>. That made me wonder if their conceptual model of “running difficulty” was similar to the “cost of running” model used in Minetti (2002). In that paper, the “cost” of running was given in terms of energy consumed by the human body, per unit distance, per unit mass. In other words, the units of this quantity are calories per kilogram per kilometer. When choosing a model to assume for my reverse-engineered product, I figured the simpler the better. The embedded assumptions in this model are: - The cost of running depends on grade, but is independent of speed. - Every person’s cost of running curve looks exactly the same. For a given slope, every person spends the same amount of energy (per unit body mass) to cover a mile.</p>
+<p>While exploring my personal activity data lake, I found that Strava seemed to be applying the grade adjustment factor to <em>distance</em>, not to <em>pace</em>. That made me wonder if their conceptual model of “running difficulty” was similar to the “cost of running” model used in Minetti (2002). In that paper, the “cost” of running was given in terms of energy consumed by the human body, per unit distance, per unit mass. In other words, the units of this quantity are calories per kilogram per kilometer. When choosing a model to assume for my reverse-engineered product, I figured the simpler the better. The embedded assumptions in this model are:</p>
+<ul>
+<li>The cost of running depends on grade, but is independent of speed.</li>
+<li>Every person’s cost of running curve looks exactly the same. For a given slope, every person spends the same amount of energy (per unit body mass) to cover a mile.</li>
+</ul>
 <p>If either of these assumptions sounds absurd, remember: the cost of running is in terms of body mass and distance covered. In order to model how much energy a person consumes getting from A to B, the cost of running gets multiplied by the individual’s body mass. And in order to determine the individual’s rate of energy consumption, the quantity is divided by time; to cover A to B in a very short time, a very high burn rate is required.</p>
 <p>Here is the equation:</p>
 <p><span class="math display">\[C_r(g) = 155.4g^5 - 30.4g^4 -43.3g^3 + 46.3g^2 + 19.5g + 3.6\]</span></p>
@@ -174,7 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   \Delta x_g = f(g) \Delta x
 \]</span></p>
 <p>In words, that means that the adjusted distance from A to B is a function of the grade at point A.</p>
-<p>I want to fit a similar curve to Strava’s “grade adjustment factor” (my term). So how can I make it happen, using the data I have at my fingertips?</p>
+<p>I want to fit a similar curve to Strava’s grade adjustment factor. So how can I make it happen, using the data I have at my fingertips?</p>
 </section>
 <section id="the-data" class="level2">
 <h2 class="anchored" data-anchor-id="the-data">The data</h2>
@@ -287,24 +291,24 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <p>I could go about this a few different ways. I’m choosing to use <code>sklearn</code> because it facilitates a generalizable approach - one not limited to polynomial regressions.</p>
 <p>Now I’m going to switch hats and start using the domain language of data science. For each activity in my personal <em>data lake</em>, I’ll <em>engineer</em> a number of <em>features</em> I’ll take the time series containing samples of all the variables measured during the activity as well as those calculated by Strava (the activity’s <em>multivariate time series</em>); then I will do some math on them to produce some scalar values - the features. I am <em>extracting</em> features from the multivariate timeseries. In keeping with the approach of [[Minetti (2002)]], the features will be of the form</p>
 <p><span class="math display">\[
-  ftr_m = \sum\limits_{i=0}^{N_{obs}-1} g_i^m \Delta x(i)
+  ftr_m = \sum\limits_{i=0}^{N_{obs}-1} g_i^m \Delta x_i
 \]</span></p>
 <p>Why? Maybe let’s take a step back.</p>
 <p>The total distance of an activity is simply the sum of its point-to-point distance time series.</p>
 <p><span class="math display">\[
-  x_g = \sum\limits_0^{N_{obs}-1} \Delta x(i)
+  x_g = \sum\limits_0^{N_{obs}-1} \Delta x_i
 \]</span></p>
 <p>Similarly, the Grade Adjusted Distance of an activity is the sum of its adjusted point-to-point distance.</p>
 <p><span class="math display">\[
-  x_g = \sum\limits_0^{N_{obs}-1} f(g(i)) \Delta x(i)
+  x_g = \sum\limits_0^{N_{obs}-1} f(g_i) \Delta x_i
 \]</span></p>
 <p>Since I decided to model the adjustment factor as a polynomial function of grade, this expression becomes</p>
 <p><span class="math display">\[
-  x_g = \sum\limits_{i=0}^{N_{obs}-1} \sum\limits_{j=0}^5 c_j \cdot g^j(i) \cdot \Delta x(i)
+  x_g = \sum\limits_{i=0}^{N_{obs}-1} \sum\limits_{j=0}^5 c_j \cdot g^j_i \cdot \Delta x_i
 \]</span></p>
 <p>Remember, all I’m looking to determine in this analysis are the coefficients <span class="math inline">\(c_{0..5}\)</span>. Everything else is in the data I have available: each activity’s Grade Adjusted Distance (<span class="math inline">\(x_g\)</span>) as well as all the observations in its time series. To make the data linear-regression-ready, I can engineer features of the form:</p>
 <p><span class="math display">\[
-  ftr_m = \sum\limits_{i=0}^{N_{obs}-1} g^m(i) \Delta x(i)
+  ftr_m = \sum\limits_{i=0}^{N_{obs}-1} g^m_i \Delta x_i
 \]</span></p>
 <p>…so that for each activity:</p>
 <p><span class="math display">\[
@@ -317,7 +321,12 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <p>…where <span class="math inline">\(\mathbf{F}\)</span> is the matrix of features that I extract from the activity time series: one row per activity, one column per feature.</p>
 <p>There is an unwritten rule that basically says: you have to use <em>these specific variables</em> in data science:</p>
 <p><span class="math display">\[\mathbf{y} = \mathbf{X} \mathbf{b}\]</span></p>
-<p>So to summarize this confusing twist: - <span class="math inline">\(\mathbf{x_g} \rightarrow \mathbf{y}\)</span> (the targets) - <span class="math inline">\(\mathbf{F} \rightarrow \mathbf{X}\)</span> (the features) - <span class="math inline">\(\mathbf{c} \rightarrow \mathbf{b}\)</span> (the coefficients)</p>
+<p>So to summarize this confusing twist:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{x_g} \rightarrow \mathbf{y}\)</span> (the targets)</li>
+<li><span class="math inline">\(\mathbf{F} \rightarrow \mathbf{X}\)</span> (the features)</li>
+<li><span class="math inline">\(\mathbf{c} \rightarrow \mathbf{b}\)</span> (the coefficients)</li>
+</ul>
 <p>Please don’t blame me, I am just speaking the vernacular of data science, trying to fit in.</p>
 <div class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>poly_degree <span class="op">=</span> <span class="dv">5</span></span>
@@ -364,14 +373,14 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 </section>
 <section id="comparing-the-result-to-ground-truth" class="level2">
 <h2 class="anchored" data-anchor-id="comparing-the-result-to-ground-truth">Comparing the result to ground truth</h2>
-<p>In Strava’s blog post <a href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3">An Improved GAP Model</a>, there is a graph comparing their “improved” grade adjustment factor to their old one based on [[Minetti (2002)]]. I’ll create my own version of this graph, using the two adjustment factor models from my analysis.</p>
-<div class="cell" data-execution_count="21">
+<p>In the Strava engineering blog post I mentioned above, there is a graph comparing their updated grade adjustment factor to their old one. I’ll create my own version of this graph, using the two adjustment factor models from my analysis.</p>
+<div class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>gradient_array <span class="op">=</span> np.linspace(<span class="op">-</span><span class="dv">35</span>, <span class="dv">35</span>, <span class="dv">1000</span>)</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>poly <span class="op">=</span> np.polynomial.Polynomial(model.coef_)</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>factor_model <span class="op">=</span> poly(gradient_array)</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>factor_minetti <span class="op">=</span> cost_of_running(gradient_array<span class="op">/</span><span class="fl">100.0</span>) <span class="op">/</span> cost_of_running(<span class="fl">0.0</span>)</span>
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">5</span>))</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">7</span>, <span class="dv">4</span>))</span>
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>plt.plot(gradient_array, factor_model, color<span class="op">=</span><span class="st">'orange'</span>)</span>
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>plt.plot(gradient_array, factor_minetti, color<span class="op">=</span><span class="st">'blue'</span>)</span>
 <span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>plt.axhline(<span class="fl">1.0</span>, color<span class="op">=</span><span class="st">'gray'</span>, linewidth<span class="op">=</span><span class="dv">1</span>)</span>
@@ -390,7 +399,7 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <figcaption class="figure-caption">adjustment factor comparison plot from Strava blog</figcaption>
 </figure>
 </div>
-<p>Now to compare my model of Strava’s adjustment factor to <strong>exact</strong> values of the adjustment factor I obtained <em>elsewhere</em> (in a story for another time).</p>
+<p>Now to compare my model of Strava’s adjustment factor to <strong>exact</strong> values of the adjustment factor I obtained elsewhere (story for another time).</p>
 <div class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> specialsauce.datasets <span class="im">import</span> load_ngp_gap</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
