@@ -2,5 +2,5 @@ matplotlib
 # notebook==6.4.12  # jupyter - needed?
 numpy
 pandas
-sklearn
+scikit-learn
 specialsauce
