@@ -6,6 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Aaron Schroeder">
+<meta name="dcterms.date" content="2023-11-03">
 
 <title>reverse-engineering - Reverse-engineering Strava’s Grade Adjusted Pace</title>
 <style>
@@ -118,7 +120,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Aaron Schroeder </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 3, 2023</p>
+    </div>
+  </div>
   
     
   </div>
@@ -144,17 +158,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>If either of these assumptions sounds absurd, remember: the cost of running is in terms of body mass and distance covered. In order to model how much energy a person consumes getting from A to B, the cost of running gets multiplied by the individual’s body mass. And in order to determine the individual’s rate of energy consumption, the quantity is divided by time; to cover A to B in a very short time, a very high burn rate is required.</p>
 <p>Here is the equation:</p>
 <p><span class="math display">\[C_r(g) = 155.4g^5 - 30.4g^4 -43.3g^3 + 46.3g^2 + 19.5g + 3.6\]</span></p>
+<p>The cost of running function from Minetti (2002) is part of <a href="https://github.com/aaron-schroeder/specialsauce/tree/master"><code>specialsauce</code></a>, a package I created to contain the fruits of my reverse engineering efforts.</p>
 <div class="cell" data-execution_count="1">
+<details>
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> specialsauce.sources.minetti <span class="im">import</span> cost_of_running</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="2">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>gradient_array <span class="op">=</span> np.linspace(<span class="op">-</span><span class="fl">0.45</span>, <span class="fl">0.45</span>, <span class="dv">100</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>plt.plot(gradient_array, cost_of_running(gradient_array))</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>plt.axhline(<span class="fl">0.0</span>, color<span class="op">=</span><span class="st">'gray'</span>, linewidth<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>plt.axvline(<span class="fl">0.0</span>, color<span class="op">=</span><span class="st">'gray'</span>, linewidth<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display">
 <p><img src="grade-adjusted-pace_files/figure-html/cell-3-output-1.png" class="img-fluid"></p>
 </div>
@@ -164,12 +185,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   f(g) = c_r(g) / c_r(0)
 \]</span></p>
 <div class="cell" data-execution_count="3">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>adjustment_factor_array <span class="op">=</span> cost_of_running(gradient_array) <span class="op">/</span> cost_of_running(<span class="fl">0.0</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>plt.axhline(<span class="fl">1.0</span>, color<span class="op">=</span><span class="st">'gray'</span>, linewidth<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>plt.axvline(<span class="fl">0.0</span>, color<span class="op">=</span><span class="st">'gray'</span>, linewidth<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>plt.plot(gradient_array, adjustment_factor_array)</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display">
 <p><img src="grade-adjusted-pace_files/figure-html/cell-4-output-1.png" class="img-fluid"></p>
 </div>
@@ -184,14 +208,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="the-data">The data</h2>
 <p><em>…cracks knuckles…</em></p>
 <div class="cell" data-execution_count="4">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="5">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dotenv <span class="im">import</span> load_dotenv</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>load_dotenv()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display" data-execution_count="5">
 <pre><code>True</code></pre>
 </div>
@@ -200,15 +230,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="time-series-from-the-strava-api">Time series from the Strava API</h3>
 <p>I have access to all the time series data for my Strava activities, going back to 2019. In this private dataset, there are over 2.5 million samples, each representing an observation recorded on my activity tracker (a GPS watch). Each observation corresponds to a discrete point in time, and contains a number of variables:</p>
 <div class="cell" data-execution_count="6">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_timeseries_data():</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    csv_file_path <span class="op">=</span> os.getenv(<span class="st">'CSV_FILE_PATH'</span>)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pd.read_csv(csv_file_path,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                       parse_dates<span class="op">=</span>[<span class="st">'timestamp'</span>],</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                       index_col<span class="op">=</span>[<span class="st">'id'</span>, <span class="st">'timestamp'</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="7">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>panel_ts_df <span class="op">=</span> load_timeseries_data()</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>panel_ts_df.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display" data-execution_count="7">
 <pre><code>Index(['lat', 'lon', 'distance', 'altitude', 'velocity_smooth', 'grade_smooth',
        'cadence', 'heartrate', 'temp', 'watts', 'moving', 'type'],
@@ -218,8 +254,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The variable names largely speak for themselves.</p>
 <p>Only two of these variables will be used in my analysis. The first, <code>distance</code>, represents cumulative distance traveled from the start of the activity. A bit of rearranging gives me what I am really after: the point-to-point distances between each sample:</p>
 <div class="cell" data-execution_count="8">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>delta_x <span class="op">=</span> panel_ts_df[<span class="st">'distance'</span>].groupby(<span class="st">'id'</span>).diff(<span class="dv">1</span>).shift(<span class="op">-</span><span class="dv">1</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>delta_x.describe()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display" data-execution_count="8">
 <pre><code>count    2.581882e+06
 mean     5.146323e+00
@@ -236,8 +275,11 @@ Name: distance, dtype: float64</code></pre>
 <p>The grade-smoothing operation is an element of Strava’s special sauce. Until I understand this algorithm (among other secrets), I will be forced to continue uploading my activity data to Strava if I want to see the calculated grade time series. That is irrelevant to this post, but it reflects my long-term ambitions: personal data liberation.</p>
 <p>Let’s get back into the data.</p>
 <div class="cell" data-execution_count="9">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>grade <span class="op">=</span> panel_ts_df[<span class="st">'grade_smooth'</span>]</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>grade.describe()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display" data-execution_count="9">
 <pre><code>count    2.583119e+06
 mean     1.325603e+00
@@ -256,6 +298,8 @@ Name: grade_smooth, dtype: float64</code></pre>
 <h3 class="anchored" data-anchor-id="grade-adjusted-distance-values-from-a-bulk-data-download">Grade Adjusted Distance values from a bulk data download</h3>
 <p>You know how you can ask for a bulk downloada of all the data you’ve uploaded to apps and services? Strava is no different. And there’s a lot of good stuff in there. What I need is the Grade Adjusted Distance for each activity. Dividing Grade Adjusted Distance by Moving Time yields Grade Adjusted Pace, which is a feature Strava pulled behind their subscription paywall in 2020. Even non-subscribers will see Grade Adjusted Distance in their bulk data download, which really seems like an oversight, but I’ll keep quiet since it facilitates this analysis.</p>
 <div class="cell" data-execution_count="10">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> zipfile <span class="im">import</span> ZipFile</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_activity_summary_data():</span>
@@ -264,11 +308,15 @@ Name: grade_smooth, dtype: float64</code></pre>
 <span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> <span class="bu">zip</span>.<span class="bu">open</span>(<span class="st">'activities.csv'</span>, <span class="st">'r'</span>) <span class="im">as</span> f:</span>
 <span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>            activities <span class="op">=</span> pd.read_csv(f)</span>
 <span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> activities</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="11">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>activities_df <span class="op">=</span> load_activity_summary_data()</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>grade_adjusted_distance <span class="op">=</span> activities_df.set_index(<span class="st">'Activity ID'</span>)[<span class="st">'Grade Adjusted Distance'</span>]</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>grade_adjusted_distance.describe()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display" data-execution_count="11">
 <pre><code>count     1163.000000
 mean     12897.031030
@@ -289,7 +337,7 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <section id="linear-regression-using-sklearn" class="level3">
 <h3 class="anchored" data-anchor-id="linear-regression-using-sklearn">Linear regression using <code>sklearn</code></h3>
 <p>I could go about this a few different ways. I’m choosing to use <code>sklearn</code> because it facilitates a generalizable approach - one not limited to polynomial regressions.</p>
-<p>Now I’m going to switch hats and start using the domain language of data science. For each activity in my personal <em>data lake</em>, I’ll <em>engineer</em> a number of <em>features</em> I’ll take the time series containing samples of all the variables measured during the activity as well as those calculated by Strava (the activity’s <em>multivariate time series</em>); then I will do some math on them to produce some scalar values - the features. I am <em>extracting</em> features from the multivariate timeseries. In keeping with the approach of [[Minetti (2002)]], the features will be of the form</p>
+<p>Now I’m going to switch hats and start using the domain language of data science. For each activity in my personal <em>data lake</em>, I’ll <em>engineer</em> a number of <em>features</em> I’ll take the time series containing samples of all the variables measured during the activity as well as those calculated by Strava (the activity’s <em>multivariate time series</em>); then I will do some math on them to produce some scalar values - the features. I am <em>extracting</em> features from the multivariate timeseries. In keeping with the approach of Minetti (2002), the features will be of the form</p>
 <p><span class="math display">\[
   ftr_m = \sum\limits_{i=0}^{N_{obs}-1} g_i^m \Delta x_i
 \]</span></p>
@@ -329,32 +377,47 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 </ul>
 <p>Please don’t blame me, I am just speaking the vernacular of data science, trying to fit in.</p>
 <div class="cell" data-execution_count="12">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>poly_degree <span class="op">=</span> <span class="dv">5</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>X_raw <span class="op">=</span> pd.concat(</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  [(delta_x <span class="op">*</span> grade <span class="op">**</span> i).groupby(<span class="st">'id'</span>).<span class="bu">sum</span>() <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(poly_degree <span class="op">+</span> <span class="dv">1</span>)],</span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  axis<span class="op">=</span><span class="dv">1</span></span>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="13">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>y_raw <span class="op">=</span> grade_adjusted_distance.dropna()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="14">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>shared_indices <span class="op">=</span> y_raw.index.intersection(X_raw.index)</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> X_raw.loc[shared_indices, :]</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> y_raw[shared_indices]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <p>Now to perform the linear regression itself, where I finally get to figure out the coefficients that give me the best fit.</p>
 <div class="cell" data-execution_count="15">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LinearRegression</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> mean_squared_error</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 <div class="cell" data-execution_count="16">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LinearRegression()</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>model.fit(X, y)</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>predictions <span class="op">=</span> model.predict(X)</span>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> mean_squared_error(y, predictions, squared<span class="op">=</span><span class="va">False</span>)</span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>rmse</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display" data-execution_count="16">
 <pre><code>35.85465857601326</code></pre>
 </div>
@@ -362,8 +425,11 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <p>For context, the mean and median is on the order of 12000.</p>
 <p>The fit’s <span class="math inline">\(R^2\)</span> value is close to 1.0. Let’s take a look at a scatterplot of my model’s predicted Grade Adjusted Distance values vs.&nbsp;“observations” from my Strava bulk download:</p>
 <div class="cell" data-execution_count="17">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>plt.scatter(y, predictions)</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display">
 <p><img src="grade-adjusted-pace_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
 </div>
@@ -375,6 +441,8 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <h2 class="anchored" data-anchor-id="comparing-the-result-to-ground-truth">Comparing the result to ground truth</h2>
 <p>In the Strava engineering blog post I mentioned above, there is a graph comparing their updated grade adjustment factor to their old one. I’ll create my own version of this graph, using the two adjustment factor models from my analysis.</p>
 <div class="cell" data-execution_count="18">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>gradient_array <span class="op">=</span> np.linspace(<span class="op">-</span><span class="dv">35</span>, <span class="dv">35</span>, <span class="dv">1000</span>)</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>poly <span class="op">=</span> np.polynomial.Polynomial(model.coef_)</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>factor_model <span class="op">=</span> poly(gradient_array)</span>
@@ -388,6 +456,7 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>plt.xlim(<span class="op">-</span><span class="dv">35</span>, <span class="dv">35</span>)</span>
 <span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>plt.ylim(<span class="dv">0</span>, <span class="dv">4</span>)</span>
 <span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display">
 <p><img src="grade-adjusted-pace_files/figure-html/cell-19-output-1.png" class="img-fluid"></p>
 </div>
@@ -401,6 +470,8 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 </div>
 <p>Now to compare my model of Strava’s adjustment factor to <strong>exact</strong> values of the adjustment factor I obtained elsewhere (story for another time).</p>
 <div class="cell" data-execution_count="19">
+<details open="">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> specialsauce.datasets <span class="im">import</span> load_ngp_gap</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>df_adjusted_pace <span class="op">=</span> load_ngp_gap()</span>
@@ -414,6 +485,7 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 <span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>plt.plot(gradient_array, poly(gradient_array))</span>
 <span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>plt.scatter(factor_experiment.index, factor_experiment, c<span class="op">=</span><span class="st">'black'</span>)</span>
 <span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-display">
 <p><img src="grade-adjusted-pace_files/figure-html/cell-20-output-1.png" class="img-fluid"></p>
 </div>
@@ -422,7 +494,8 @@ Name: Grade Adjusted Distance, dtype: float64</code></pre>
 </section>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
-<p>With such a large number of data points (thanks to 2.5 million discrete samples in my time series history), it was tempting to throw computing power at the problem of reverse-engineering the GAP algorithm. I hope that this post highlights the potential for compute cost savings when a thoughtful modelling approach is adopted.</p>
+<p>With such a large number of data points (thanks to 2.5 million discrete samples in my time series history), it was tempting to throw computing power at the problem of reverse-engineering the GAP algorithm. I hope that this post highlights the potential compute cost savings when a thoughtful modelling approach is adopted.</p>
+<p><a href="https://github.com/aaron-schroeder/reverse-engineering/blob/master/grade-adjusted-pace.ipynb">The notebook I used to generate this post can be found here</a>.</p>
 
 
 </section>
