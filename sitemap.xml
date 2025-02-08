@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://github.com/aaron-schroeder/reverse-engineering/grade-adjusted-pace.html</loc>
-    <lastmod>2023-11-06T18:19:47.974Z</lastmod>
+    <loc>https://aaron-schroeder.github.io/reverse-engineering/grade-adjusted-pace.html</loc>
+    <lastmod>2025-02-08T20:15:40.851Z</lastmod>
+  </url>
+  <url>
+    <loc>https://aaron-schroeder.github.io/reverse-engineering/heatmap.html</loc>
+    <lastmod>2025-02-08T20:15:40.871Z</lastmod>
   </url>
 </urlset>
